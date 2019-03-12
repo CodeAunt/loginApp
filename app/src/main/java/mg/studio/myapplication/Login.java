@@ -127,13 +127,12 @@ public class Login extends AppCompatActivity {
 
             SharedPreferences  sp2 = getSharedPreferences("name_info", Context.MODE_PRIVATE);
             name_sp =  sp2.getString(email, "");
-
-
             if(password.equals(password_sp)){
                 session.setLogin(true);
                 // Move the user to MainActivity and pass in the User name which was form the server
                 Intent intent = new Intent(getApplication(), MainActivity.class);
                 intent.putExtra("username", name_sp);
+
                 startActivity(intent);
                 finish();
             } else if(password_sp.equals("")){

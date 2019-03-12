@@ -126,16 +126,16 @@ public class Register extends AppCompatActivity {
         //use email to record password.
         //ref: https://www.cnblogs.com/NeilZhang/p/8099371.html
         SharedPreferences sharedPreferences = getSharedPreferences("password_info", MODE_PRIVATE);
-        String check  = sharedPreferences.getString(email ,"");
-        if (!check.equals("")) {
+        String check = sharedPreferences.getString(email ,"");
+        if (check.equals("")) {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString(email, password);
                 editor.commit();
 
                 //use email to record the name.
-                sharedPreferences = getSharedPreferences("name_info", MODE_PRIVATE);
-                SharedPreferences.Editor editor2 = sharedPreferences.edit();
-                editor.putString(email, name);
+                SharedPreferences sharedPreferences2 = getSharedPreferences("name_info", MODE_PRIVATE);
+                SharedPreferences.Editor editor2 = sharedPreferences2.edit();
+                editor2.putString(email, name);
                 editor2.commit();
 
                 Intent intent = new Intent(getApplication(), Login.class);
