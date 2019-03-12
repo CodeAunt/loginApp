@@ -27,22 +27,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tvName = findViewById(R.id.user_name);
-
-
         /**
          * If the user just registered an account from Register.class,
          * the parcelable should be retrieved
          */
-//        Bundle bundle = getIntent().getExtras();
-//        if (bundle != null) {
-//            // Retrieve the parcelable
-//            Feedback feedback = bundle.getParcelable("feedback");
-//            // Get the from the object
-//            String userName = feedback.getName();
-//            tvName.setText(userName);
-//        }
-
-
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            //Get username form bundle.
+            String username = bundle.getString("username");
+            tvName.setText(username);
+        }
     }
 
 
@@ -52,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
      * - Will set isLoggedIn flag to false in SharedPreferences
      * - Clears the user data from SqLite users table
      */
-
     public void btnLogout(View view) {
         logout();
     }

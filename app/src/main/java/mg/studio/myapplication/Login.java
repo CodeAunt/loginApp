@@ -67,7 +67,6 @@ public class Login extends AppCompatActivity {
             display.setVisibility(View.VISIBLE);
             String prompt = userName.substring(0, 1).toUpperCase() + userName.substring(1) + " " + getString(R.string.account_created);
             display.setText(prompt);
-
         }
 
         inputEmail = findViewById(R.id.email);
@@ -104,6 +103,7 @@ public class Login extends AppCompatActivity {
     public void btnLogin(View view) {
 
 
+
         String email = inputEmail.getText().toString().trim();
         String password = inputPassword.getText().toString().trim();
 
@@ -113,17 +113,40 @@ public class Login extends AppCompatActivity {
             // Avoid multiple clicks on the button
             loginButton.setClickable(false);
 
-            //Todo : ensure the user has Internet connection
-
             // Display the progress Dialog
             progressDialog.setMessage("Logging in ...");
             if (!progressDialog.isShowing())
                 progressDialog.show();
 
-            //Todo: need to check weather the user has Internet before attempting checking the data
-            // Start fetching the data from the Internet
-            new OnlineCredentialValidation().execute(email,password);
+            String name_sp;
+            String password_sp;
 
+            //read the data from sp.
+            SharedPreferences  sp1 = getSharedPreferences("password_info", Context.MODE_PRIVATE);
+            password_sp =  sp1.getString(email, "");
+
+            SharedPreferences  sp2 = getSharedPreferences("name_info", Context.MODE_PRIVATE);
+            name_sp =  sp2.getString(email, "");
+
+
+            if(password.equals(password_sp)){
+                session.setLogin(true);
+                // Move the user to MainActivity and pass in the User name which was form the server
+                Intent intent = new Intent(getApplication(), MainActivity.class);
+                intent.putExtra("username", name_sp);
+                startActivity(intent);
+                finish();
+            } else if(password_sp.equals("")){
+                loginButton.setClickable(true);
+                Toast.makeText(getApplication(), "No such email registed.", Toast.LENGTH_SHORT).show();
+            } else{
+                // Allow the user to click the button
+                loginButton.setClickable(true);
+                Toast.makeText(getApplication(), "Password doesn't match.", Toast.LENGTH_SHORT).show();
+            }
+
+            if (progressDialog.isShowing())
+                progressDialog.dismiss();
         } else {
             // Prompt user to enter credentials
             Toast.makeText(getApplicationContext(),
@@ -131,7 +154,6 @@ public class Login extends AppCompatActivity {
                     .show();
         }
     }
-
 
     /**
      * Press the button register, go to Registration form
@@ -143,163 +165,4 @@ public class Login extends AppCompatActivity {
         finish();
     }
 
-
-
-    /**
-     * Use the email and password provided to log the user in if the credentials are valid
-     *
-     */
-
-
-
-    class OnlineCredentialValidation extends AsyncTask<String, Void, Integer> {
-
-        @Override
-        protected Integer doInBackground(String... strings) {
-            feedback = new Feedback();
-
-            String response = null;
-            OutputStreamWriter request = null;
-            int parsingFeedback = feedback.FAIL;
-
-
-            // Variables
-            final String BASE_URL = new Config().getLoginUrl();
-            final String EMAIL = "email";
-            final String PASSWORD = "password";
-            final String PARAMS = EMAIL + "=" + strings[0] + "&" + PASSWORD + "=" + strings[1];
-            Log.d("TAG","Email and Pass - "+EMAIL + "=" + strings[0] + "&" + PASSWORD + "=" + strings[1]);
-
-            URL url = null;
-            HttpURLConnection connection = null;
-            try {
-                url = new URL(BASE_URL);
-                connection = (HttpURLConnection) url.openConnection();
-                //Set the request method to POST
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                connection.setDoOutput(true);
-
-                // Timeout for reading InputStream arbitrarily set to 3000ms.
-                connection.setReadTimeout(15000);
-                // Timeout for connection.connect() arbitrarily set to 3000ms.
-                connection.setConnectTimeout(15000);
-
-                // Output the stream to the server
-                request = new OutputStreamWriter(connection.getOutputStream());
-                request.write(PARAMS);
-                request.flush();
-                request.close();
-
-                // Get the inputStream using the same connection
-                InputStream inputStream = new BufferedInputStream(connection.getInputStream());
-                response = readStream(inputStream, 500);
-                inputStream.close();
-
-                // Parsing the response
-                parsingFeedback = parsingResponse(response);
-
-
-            } catch (MalformedURLException e) {
-                Log.e("TAG", "URL - " + e);
-                feedback.setError_message(e.toString());
-                return feedback.FAIL;
-            } catch (IOException e) {
-                Log.e("TAG", "openConnection() - " + e);
-                feedback.setError_message(e.toString());
-                return feedback.FAIL;
-            } finally {
-                if (connection != null) // Make sure the connection is not null before disconnecting
-                    connection.disconnect();
-                Log.d("TAG", "Response " + response);
-
-                return parsingFeedback;
-            }
-        }
-
-
-
-
-        @Override
-        protected void onPostExecute(Integer mFeedback) {
-            super.onPostExecute(mFeedback);
-            if (progressDialog.isShowing()) progressDialog.dismiss();
-
-            if (mFeedback == feedback.SUCCESS) {
-                // Update the session
-                session.setLogin(true);
-                // Move the user to MainActivity and pass in the User name which was form the server
-                Intent intent = new Intent(getApplication(), MainActivity.class);
-                intent.putExtra("feedback", feedback);
-                startActivity(intent);
-            } else {
-                // Allow the user to click the button
-                loginButton.setClickable(true);
-                Toast.makeText(getApplication(), feedback.getError_message(), Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        /**
-         * Converts the contents of an InputStream to a String.
-         */
-        String readStream(InputStream stream, int maxReadSize)
-                throws IOException {
-            Reader reader = null;
-            reader = new InputStreamReader(stream, "UTF-8");
-            char[] rawBuffer = new char[maxReadSize];
-            int readSize;
-            StringBuffer buffer = new StringBuffer();
-            while (((readSize = reader.read(rawBuffer)) != -1) && maxReadSize > 0) {
-                if (readSize > maxReadSize) {
-                    readSize = maxReadSize;
-                }
-                buffer.append(rawBuffer, 0, readSize);
-                maxReadSize -= readSize;
-            }
-
-            Log.d("TAG", buffer.toString());
-            return buffer.toString();
-        }
-    }
-
-
-    /**
-     * Parsing the string response from the Server
-     * @param response
-     * @return
-     */
-    public int parsingResponse(String response) {
-
-        try {
-            JSONObject jObj = new JSONObject(response);
-            /**
-             * If the registration on the server was successful the return should be
-             * {"error":false}
-             * Else, an object for error message is added
-             * Example: {"error":true,"error_msg":"Invalid email format."}
-             * Success of the registration can be checked based on the
-             * object error, where true refers to the existence of an error
-             */
-            boolean error = jObj.getBoolean("error");
-
-            if (!error) {
-                //No error, return from the server was {"error":false}
-                JSONObject user = jObj.getJSONObject("user");
-                String email = user.getString("email");
-                feedback.setName(email);
-                return feedback.SUCCESS;
-            } else {
-                // The return contains error messages
-                String errorMsg = jObj.getString("error_msg");
-                Log.d("TAG", "errorMsg : " + errorMsg);
-                feedback.setError_message(errorMsg);
-                return feedback.FAIL;
-            }
-        } catch (JSONException e) {
-            feedback.setError_message(e.toString());
-            return feedback.FAIL;
-        }
-
-    }
 }

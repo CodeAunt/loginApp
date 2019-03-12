@@ -48,7 +48,7 @@ public class Register extends AppCompatActivity {
     private EditText inputPassword;
     private SessionManager session;
     private ProgressDialog pDialog;
-    private String name;
+    String name;
     Feedback feedback;
 
     @Override
@@ -62,11 +62,9 @@ public class Register extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         btnLinkToLogin = findViewById(R.id.btnLinkToLoginScreen);
 
-
         // Preparing the Progress dialog
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
-
 
         // Session manager
         session = new SessionManager(getApplicationContext());
@@ -89,7 +87,6 @@ public class Register extends AppCompatActivity {
                     btnRegister.setClickable(false);
                     //Register the user
                     registerUser(name, email, password);
-
 
                 } else {
                     Toast.makeText(getApplicationContext(),
@@ -114,6 +111,7 @@ public class Register extends AppCompatActivity {
 
     /**
      * Register a new user to the server database
+     *
      * @param name     username
      * @param email    email address, which should be unique to the user
      * @param password length should be < 50 characters
@@ -123,165 +121,32 @@ public class Register extends AppCompatActivity {
 
         pDialog.setMessage("Registering ...");
         if (!pDialog.isShowing()) pDialog.show();
-        //Todo: Need to check Internet connection
-        new DownloadData().execute(name, email, password);
 
+        //Use sharedPreference
+        //use email to record password.
+        //ref: https://www.cnblogs.com/NeilZhang/p/8099371.html
+        SharedPreferences sharedPreferences = getSharedPreferences("password_info", MODE_PRIVATE);
+        String check  = sharedPreferences.getString(email ,"");
+        if (!check.equals("")) {
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(email, password);
+                editor.commit();
 
-    }
+                //use email to record the name.
+                sharedPreferences = getSharedPreferences("name_info", MODE_PRIVATE);
+                SharedPreferences.Editor editor2 = sharedPreferences.edit();
+                editor.putString(email, name);
+                editor2.commit();
 
-
-    class DownloadData extends AsyncTask<String, Void, Integer> {
-
-
-        @Override
-        protected Integer doInBackground(String... strings) {
-            feedback = new Feedback();
-
-            String response = null;
-            OutputStreamWriter request = null;
-            int parsingFeedback = feedback.FAIL;
-
-
-            // Variables
-            final String BASE_URL = new Config().getRegisterUrl();
-            final String NAME = "name";
-            final String EMAIL = "email";
-            final String PASSWORD = "password";
-            final String PARAMS = NAME + "=" + strings[0] + "&" + EMAIL + "=" + strings[1] + "&" + PASSWORD + "=" + strings[2];
-
-            SharedPreferences sharedPreferences = getSharedPreferences("info", MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("Username");
-
-
-            editor.commit();
-//            URL url = null;
-//            HttpURLConnection connection = null;
-//            try {
-//                url = new URL(BASE_URL);
-//                connection = (HttpURLConnection) url.openConnection();
-//                //Set the request method to POST
-//                connection.setRequestMethod("POST");
-//                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-//                connection.setDoOutput(true);
-//
-//                // Timeout for reading InputStream arbitrarily set to 3000ms.
-//                connection.setReadTimeout(9000);
-//                // Timeout for connection.connect() arbitrarily set to 3000ms.
-//                connection.setConnectTimeout(9000);
-//
-//                // Output the stream to the server
-//                request = new OutputStreamWriter(connection.getOutputStream());
-//                request.write(PARAMS);
-//                request.flush();
-//                request.close();
-//
-//                // Get the inputStream using the same connection
-//                InputStream inputStream = new BufferedInputStream(connection.getInputStream());
-//                response = readStream(inputStream, 500);
-//                inputStream.close();
-//
-//                // Parsing the response
-//                parsingFeedback = parsingResponse(response);
-//
-//
-//            } catch (MalformedURLException e) {
-//                Log.e("TAG", "URL - " + e);
-//                feedback.setError_message(e.toString());
-//                return feedback.FAIL;
-//            } catch (IOException e) {
-//                Log.e("TAG", "openConnection() - " + e);
-//                feedback.setError_message(e.toString());
-//                return feedback.FAIL;
-//            } finally {
-//                if (connection != null) // Make sure the connection is not null before disconnecting
-//                    connection.disconnect();
-//                Log.d("TAG", "Response " + response);
-//
-//                return parsingFeedback;
-//            }
-
-
-        }
-
-        private void saveUsersInfo() {
-            SharedPreferences sharedPreferences = getSharedPreferences("UsersInfo", MODE_APPEND);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString("username", edit_register.getText().toString());
-            editor.commit();
-        }
-
-        @Override
-        protected void onPostExecute(Integer mFeedback) {
-            super.onPostExecute(mFeedback);
-            if (pDialog.isShowing()) pDialog.dismiss();
-            if (mFeedback == feedback.SUCCESS) {
                 Intent intent = new Intent(getApplication(), Login.class);
-                intent.putExtra("feedback", feedback);
                 startActivity(intent);
                 finish();
+
             } else {
                 btnRegister.setClickable(true);
-                Toast.makeText(getApplication(), feedback.getError_message(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplication(), "Fail to regist, your mail account may has been oaacupied.", Toast.LENGTH_SHORT).show();
             }
-
-        }
-
-        /**
-         * Converts the contents of an InputStream to a String.
-         */
-        String readStream(InputStream stream, int maxReadSize)
-                throws IOException {
-            Reader reader = null;
-            reader = new InputStreamReader(stream, "UTF-8");
-            char[] rawBuffer = new char[maxReadSize];
-            int readSize;
-            StringBuffer buffer = new StringBuffer();
-            while (((readSize = reader.read(rawBuffer)) != -1) && maxReadSize > 0) {
-                if (readSize > maxReadSize) {
-                    readSize = maxReadSize;
-                }
-                buffer.append(rawBuffer, 0, readSize);
-                maxReadSize -= readSize;
-            }
-
-            Log.d("TAG", buffer.toString());
-            return buffer.toString();
-        }
+        if (pDialog.isShowing()) pDialog.dismiss();
     }
-
-
-    public int parsingResponse(String response) {
-
-        try {
-            JSONObject jObj = new JSONObject(response);
-            /**
-             * If the registration on the server was successful the return should be
-             * {"error":false}
-             * Else, an object for error message is added
-             * Example: {"error":true,"error_msg":"Invalid email format."}
-             * Success of the registration can be checked based on the
-             * object error, where true refers to the existence of an error
-             */
-            boolean error = jObj.getBoolean("error");
-
-            if (!error) {
-                //No error, return from the server was {"error":false}
-                feedback.setName(name);
-                return feedback.SUCCESS;
-            } else {
-                // The return contains error messages
-                String errorMsg = jObj.getString("error_msg");
-                Log.d("TAG", "errorMsg : " + errorMsg);
-                feedback.setError_message(errorMsg);
-                return feedback.FAIL;
-            }
-        } catch (JSONException e) {
-            feedback.setError_message(e.toString());
-            return feedback.FAIL;
-        }
-
-    }
-
 }
 
