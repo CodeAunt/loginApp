@@ -57,17 +57,17 @@ public class Login extends AppCompatActivity {
          * If the user just registered an account from Register.class,
          * the parcelable should be retrieved
          */
-        Bundle bundle = getIntent().getExtras();
-        if (bundle != null) {
-            // Retrieve the parcelable
-            Feedback feedback = bundle.getParcelable("feedback");
-            // Get the from the object
-            String userName = feedback.getName();
-            TextView display = findViewById(R.id.display);
-            display.setVisibility(View.VISIBLE);
-            String prompt = userName.substring(0, 1).toUpperCase() + userName.substring(1) + " " + getString(R.string.account_created);
-            display.setText(prompt);
-        }
+//        Bundle bundle = getIntent().getExtras();
+//        if (bundle != null) {
+//            // Retrieve the parcelable
+//            Feedback feedback = bundle.getParcelable("feedback");
+//            // Get the from the object
+//            String userName = feedback.getName();
+//            TextView display = findViewById(R.id.display);
+//            display.setVisibility(View.VISIBLE);
+//            String prompt = userName.substring(0, 1).toUpperCase() + userName.substring(1) + " " + getString(R.string.account_created);
+//            display.setText(prompt);
+//        }
 
         inputEmail = findViewById(R.id.email);
         inputPassword = findViewById(R.id.password);
@@ -91,8 +91,6 @@ public class Login extends AppCompatActivity {
             startActivity(new Intent(this, MainActivity.class));
             finish();
         }
-
-
     }
 
     /**
@@ -101,8 +99,6 @@ public class Login extends AppCompatActivity {
      *  @param view from activity_login.xml
      */
     public void btnLogin(View view) {
-
-
 
         String email = inputEmail.getText().toString().trim();
         String password = inputPassword.getText().toString().trim();
